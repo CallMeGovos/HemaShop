@@ -1,0 +1,100 @@
+<div class="row">
+  {% for product in products %}
+  <div class="col-md-4 mb-4">
+    <div class="card h-100">
+      <img src="{{ url_for('static', filename='images/' + product.url_image_0) }}" class="card-img-top"
+        alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+      <div class="card-body">
+        <h5 class="card-title">{{ product.name }}</h5>
+        <p class="card-text">
+          <strong>Loại:</strong> {{ product.type }}<br>
+          <strong>Thương hiệu:</strong> {{ product.brand }}<br>
+          <strong>Giá:</strong> ${{ product.price }}<br>
+          {% for brand in brands %}
+          {% if brand.name == product.brand %}
+          <img src="{{ url_for('static', filename='images/' + brand.logo) }}" alt="{{ brand.name }} logo"
+            class="brand-logo" style="width: 50px; height: 50px;">
+          {% endif %}
+          {% endfor %}
+        </p>
+        {% if 'username' in session %}
+        <div id="add-to-cart-{{ product.product_id }}" class="add-to-cart-form"
+          data-product-id="{{ product.product_id }}">
+          <input type="hidden" name="quantity" value="1">
+          <button type="button" class="btn btn-primary add-to-cart-btn">Thêm vào giỏ hàng</button>
+        </div>
+        {% endif %}
+        <a href="/product_detail/{{ product.product_id }}" class="btn btn-info mt-2">Xem chi tiết</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Thêm phần toast notification -->
+<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+<!-- Thêm jQuery và JavaScript -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function () {
+    $('.add-to-cart-btn').click(function () {
+      var form = $(this).closest('.add-to-cart-form');
+      var productId = form.data('product-id');
+      var quantity = form.find('input[name="quantity"]').val();
+
+      $.ajax({
+        url: '/add_to_cart/' + productId,
+        type: 'POST',
+        data: {
+          quantity: quantity
+        },
+        success: function (response) {
+          if (response.success) {
+            // Tạo và hiển thị toast notification
+            var toast = $('<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">' +
+              '<div class="toast-header">' +
+              '<strong class="me-auto">Thành công</strong>' +
+              '<button type="button" class="btn-close" data-bs-dismiss="toast"></button>' +
+              '</div>' +
+              '<div class="toast-body" style="color: red">Sản phẩm đã được thêm vào giỏ hàng!</div>' +
+              '</div>');
+            $('#toast-container').append(toast);
+            var bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+
+            // Cập nhật số lượng giỏ hàng
+            if ($('#cart-count').length) {
+              $('#cart-count').text(response.cart_count);
+            }
+          } else {
+            // Hiển thị toast lỗi
+            var toast = $('<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">' +
+              '<div class="toast-header">' +
+              '<strong class="me-auto text-danger">Lỗi</strong>' +
+              '<button type="button" class="btn-close" data-bs-dismiss="toast"></button>' +
+              '</div>' +
+              '<div class="toast-body">' + response.error + '</div>' +
+              '</div>');
+            $('#toast-container').append(toast);
+            var bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+          }
+        },
+        error: function (xhr, status, error) {
+          // Hiển thị toast lỗi
+          var toast = $('<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">' +
+            '<div class="toast-header">' +
+            '<strong class="me-auto text-danger">Lỗi</strong>' +
+            '<button type="button" class="btn-close" data-bs-dismiss="toast"></button>' +
+            '</div>' +
+            '<div class="toast-body">Lỗi khi thêm sản phẩm: ' + error + '</div>' +
+            '</div>');
+          $('#toast-container').append(toast);
+          var bsToast = new bootstrap.Toast(toast);
+          bsToast.show();
+        }
+      });
+    });
+  });
+</script>

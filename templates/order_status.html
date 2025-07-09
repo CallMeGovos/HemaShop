@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %} - Trạng thái đơn hàng{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <h2 class="text-center mb-4">Trạng thái đơn hàng</h2>
+
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-warning alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
+
+  {% if orders %}
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Mã đơn hàng</th>
+          <th>Khách hàng</th>
+          <th>Ngày đặt</th>
+          <th>Ngày giao</th>
+          <th>Tổng tiền</th>
+          <th>Trạng thái</th>
+          <th>Xem chi tiết</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td>{{ order[0] }}</td> <!-- order_id -->
+          <td>{{ order[1] }}</td> <!-- full_name -->
+          <td>{{ order[2] }}</td> <!-- order_date -->
+          <td>{{ order[3] }}</td> <!-- delivery_date -->
+          <td>${{ "%.2f"|format(order[4]) }}</td> <!-- total_amount -->
+          <td>{{ status_mapping[order[5]] }}</td> <!-- status -->
+          <td>
+            <button class="btn btn-info btn-sm detail-btn" data-order-id="{{ order[0] }}" data-bs-toggle="collapse"
+              data-bs-target="#detail-{{ order[0] }}" aria-expanded="false" aria-controls="detail-{{ order[0] }}">
+              Xem chi tiết
+            </button>
+          </td>
+        </tr>
+        <tr class="collapse" id="detail-{{ order[0] }}">
+          <td colspan="7">
+            <div class="card card-body">
+              <h5>Chi tiết đơn hàng #{{ order[0] }}</h5>
+              {% if order_details[order[0]] %}
+              <ul class="list-group">
+                {% for detail in order_details[order[0]] %}
+                <li class="list-group-item">
+                  Sản phẩm ID: {{ detail[0] }}<br> <!-- product_id -->
+                  Số lượng: {{ detail[1] }}<br> <!-- quantity -->
+                  Giá đơn vị: ${{ "%.2f"|format(detail[2]) }}<br> <!-- unit_price -->
+                  Giảm giá: {{ "%.2f"|format(detail[3]) }}%<br> <!-- discount -->
+                  Tổng giá: ${{ "%.2f"|format(detail[4]) }}
+                  <!-- total_price -->
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p>Không có chi tiết cho đơn hàng này.</p>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-center">Bạn chưa có đơn hàng nào.</p>
+  {% endif %}
+</div>
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.detail-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const target = document.querySelector(button.getAttribute('data-bs-target'));
+      target.classList.toggle('show');
+    });
+  });
+</script>
+{% endblock %}
+{% endblock %}

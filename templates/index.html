@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %} - Trang chủ{% endblock %}
+{% block content %}
+<div class="row" style="width: 80%; margin: 0 auto;">
+  <h1 class="text-center mb-4">Chào mừng đến với HEMA Shop</h1>
+  <!-- Slider -->
+  <div class="col-12">
+    <div id="carouselExample" class="carousel slide" data-bs-ride="carousel"
+      style="max-height: 400px; overflow: hidden;">
+      <div class="carousel-inner">
+        <div class="carousel-item active">
+          <img src="{{ url_for('static', filename='images/dark_sister_0.png') }}" class="d-block w-100"
+            style="height: 200px; object-fit: cover;" alt="The Dark Sister">
+          <div class="carousel-caption d-none d-md-block">
+            <h5 style="color: black;">The Dark Sister</h5>
+            <p style="color: black;">Visenya Targaryen là một chiến binh vĩ đại. Bà có một thanh kiếm thép Valyrian mà
+              bà gọi là 'Dark
+              Sister'.</p>
+          </div>
+        </div>
+        <div class="carousel-item">
+          <img src="{{ url_for('static', filename='images/daemon_armor.jpg') }}" class="d-block w-100"
+            style="height: 200px; object-fit: cover;" alt="Daemon Targaryen armor">
+          <div class="carousel-caption d-none d-md-block">
+            <h5 style="color: rgb(247, 0, 0);">Daemon Targaryen armor</h5>
+            <p style="color: rgb(247, 0, 0);">Màu bạc sáng, trang trí với các họa tiết rồng vàng và các họa tiết hình
+              lửa.</p>
+          </div>
+        </div>
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
+    </div>
+  </div>
+  <div class="col-md-3">
+    {% include 'partials1.html' %}
+    {% include 'partials2.html' %}
+  </div>
+  <div class="col-md-9">
+    {% if 'username' in session or 'admin_session' in session %}
+    <div class="alert alert-success" id="welcome-alert">
+      Chào mừng, {{ full_name }}!
+    </div>
+    {% endif %}
+    {% include 'products.html' %}
+    <!-- Phân trang -->
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        {% if page > 1 %}
+        <li class="page-item">
+          <a class="page-link"
+            href="{{ url_for('index', page=page-1, type=selected_type, brand=selected_brand) }}">Trước</a>
+        </li>
+        {% endif %}
+        {% for p in range(1, total_pages + 1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+          <a class="page-link"
+            href="{{ url_for('index', page=p, type=selected_type, brand=selected_brand) }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+        {% if page < total_pages %}
+        <li class="page-item">
+          <a class="page-link"
+            href="{{ url_for('index', page=page+1, type=selected_type, brand=selected_brand) }}">Tiếp</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% include 'best_seller.html' %}
+  </div>
+</div>
+
+<!-- JavaScript để ẩn thông báo sau 2 giây -->
+{% block scripts %}
+<script>
+  setTimeout(() => {
+    const alert = document.getElementById('welcome-alert');
+    if (alert) alert.style.display = 'none';
+  }, 2000); // 2000 milliseconds = 2 giây
+</script>
+{% endblock %}
+{% endblock %}

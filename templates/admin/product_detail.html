@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %} - Chi tiết sản phẩm{% endblock %}
+{% block content %}
+<div class="container">
+  <h1 class="text-center mb-4">Chi tiết sản phẩm</h1>
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <img src="{{ product.url_image_0 }}" class="card-img-top" alt="{{ product.name }}"
+          style="height: 300px; object-fit: cover;">
+        <div class="card-body">
+          <h5 class="card-title">{{ product.name }}</h5>
+          <p class="card-text">
+            <strong>Loại:</strong> {{ product.type }}<br>
+            <strong>Thương hiệu:</strong> {{ product.brand }}<br>
+            <strong>Giá:</strong> ${{ product.price }}<br>
+            <strong>Mô tả:</strong> {{ product.description | safe }}<br>
+          </p>
+          <form method="POST" action="/add_to_cart/{{ product.id }}">
+            <input type="hidden" name="quantity" value="1">
+            <button type="submit" class="btn btn-primary">Thêm vào giỏ hàng</button>
+          </form>
+          <a href="/" class="btn btn-secondary mt-2">Quay lại</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

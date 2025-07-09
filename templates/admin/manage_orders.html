@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %} - Quản lý đơn hàng{% endblock %}
+{% block content %}
+<h2>Quản lý đơn hàng</h2>
+<table class="table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Họ tên</th>
+      <th>Địa chỉ</th>
+      <th>Số điện thoại</th>
+      <th>Địa chỉ email</th>
+      <th>Ngày đặt</th>
+      <th>Ngày giao</th>
+      <th>Tổng tiền</th>
+      <th>Hành động</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for order in orders %}
+    <tr>
+      <td>{{ order.id }}</td>
+      <td>{{ order.full_name }}</td>
+      <td>{{ order.address }}</td>
+      <td>{{ order.phone }}</td>
+      <td>{{ order.email }}</td>
+      <td>{{ order.order_date }}</td>
+      <td>{{ order.delivery_date }}</td>
+      <td>${{ order.total_amount }}</td>
+      <td>
+        <a href="{{ url_for('approve_order', order_id=order.id) }}" class="btn btn-success btn-sm">Duyệt</a>
+        <a href="{{ url_for('reject_order', order_id=order.id) }}" class="btn btn-danger btn-sm">Từ chối</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

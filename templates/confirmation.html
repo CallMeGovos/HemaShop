@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %} - Xác nhận đơn hàng{% endblock %}
+{% block content %}
+<div class="container">
+  <h1 class="text-center mb-4">Xác nhận đơn hàng</h1>
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">Xác nhận đơn hàng thành công!</h5>
+          <p class="card-text">Cảm ơn bạn, {{ user_info.full_name }}, đã đặt hàng. Một email xác nhận đã được gửi đến
+            {{ user_info.email }}.</p>
+          <p class="card-text">Ngày đặt: {{ order_date }}</p>
+          <p class="card-text">Ngày giao hàng dự kiến: {{ delivery_date }}</p>
+          <p class="card-text">Tổng tiền: {{ '{:,.0f}'.format(total_amount) }} VND</p>
+          <a href="/" class="btn btn-primary">Trở về trang chủ</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

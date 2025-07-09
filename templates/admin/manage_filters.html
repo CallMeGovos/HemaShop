@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %} - Quản lý lọc{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <h1 class="text-center mb-4 text-white fw-bold"
+    style="background: linear-gradient(90deg, #ff7e5f, #feb47b); padding: 10px; border-radius: 10px;">Quản lý lọc</h1>
+  <!-- Form duy nhất với nút Lưu thay đổi -->
+  <form method="POST" action="/update_filters" class="mt-4">
+    <div class="row">
+      <!-- Phần Loại sản phẩm -->
+      <div class="col-md-6">
+        <div class="card h-100 shadow-sm"
+          style="background: linear-gradient(135deg, #6e8efb, #a777e3); border: none; border-radius: 15px;">
+          <div class="card-body">
+            <h3 class="card-title text-white fw-bold mb-4">Loại sản phẩm</h3>
+            {% for type in types %}
+            <div class="form-check mb-3">
+              <input type="checkbox" name="types" value="{{ type.id }}" class="form-check-input filter-checkbox"
+                {% if type.is_active %}checked{% endif %}>
+              <label class="form-check-label text-white" style="transition: color 0.3s;">{{ type.type }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Phần Thương hiệu -->
+      <div class="col-md-6">
+        <div class="card h-100 shadow-sm"
+          style="background: linear-gradient(135deg, #ff6f61, #ff9a76); border: none; border-radius: 15px;">
+          <div class="card-body">
+            <h3 class="card-title text-white fw-bold mb-4">Thương hiệu</h3>
+            {% for brand in brands %}
+            <div class="form-check mb-3">
+              <input type="checkbox" name="brands" value="{{ brand.id }}" class="form-check-input filter-checkbox"
+                {% if brand.is_active %}checked{% endif %}>
+              <label class="form-check-label text-white" style="transition: color 0.3s;">{{ brand.name }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <button type="submit" class="btn btn-light w-100"
+      style="background: linear-gradient(90deg, #a777e3, #ff9a76); border: none; transition: transform 0.3s; padding: 10px;margin-top: 20px;">
+      Lưu thay đổi
+    </button>
+  </form>
+</div>
+
+<!-- CSS tùy chỉnh -->
+{% block styles %}
+<style>
+  .filter-checkbox {
+    transform: scale(1.2);
+    /* Phóng to checkbox */
+    margin-right: 10px;
+    transition: transform 0.3s, background-color 0.3s;
+  }
+
+  .filter-checkbox:checked {
+    background-color: #ffd700;
+    /* Màu vàng khi checked */
+    border-color: #ffd700;
+  }
+
+  .form-check-label:hover {
+    color: #ffd700;
+    /* Màu vàng khi hover */
+  }
+
+  .btn:hover {
+    transform: scale(1.05);
+    /* Phóng to nút khi hover */
+  }
+
+  .card {
+    transition: box-shadow 0.3s;
+  }
+
+  .card:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    /* Hiệu ứng bóng khi hover */
+  }
+</style>
+{% endblock %}
+{% endblock %}

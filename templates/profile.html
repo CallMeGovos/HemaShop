@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %} - Trang cá nhân{% endblock %}
+{% block content %}
+<div class="container">
+  <h1 class="text-center mb-4">Trang cá nhân</h1>
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          {% with messages = get_flashed_messages() %}
+          {% if messages %}
+          {% for message in messages %}
+          <div class="alert alert-info">{{ message }}</div>
+          {% endfor %}
+          {% endif %}
+          {% endwith %}
+          <form method="POST" action="/profile">
+            <div class="mb-3">
+              <label for="full_name" class="form-label">Họ và tên</label>
+              <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name }}"
+                required>
+            </div>
+            <div class="mb-3">
+              <label for="username" class="form-label">Tên tài khoản</label>
+              <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}"
+                readonly>
+            </div>
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+            </div>
+            <div class="mb-3">
+              <label for="address" class="form-label">Địa chỉ</label>
+              <input type="text" class="form-control" id="address" name="address" value="{{ user.address }}">
+            </div>
+            <div class="mb-3">
+              <label for="phone" class="form-label">Số điện thoại</label>
+              <input type="text" class="form-control" id="phone" name="phone" value="{{ user.phone }}">
+            </div>
+            <div class="mb-3">
+              <label for="birth_date" class="form-label">Ngày sinh</label>
+              <input type="date" class="form-control" id="birth_date" name="birth_date" value="{{ user.birth_date }}">
+            </div>
+            <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

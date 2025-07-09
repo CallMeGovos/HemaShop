@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %} - Quản lý sản phẩm{% endblock %}
+{% block content %}
+<div class="container">
+  <h1 class="text-center mb-4">Quản lý sản phẩm</h1>
+  <div class="row">
+    {% for product in products %}
+    <div class="col-md-4 mb-4">
+      <div class="card">
+        <img src="{{ url_for('static', filename='images/' + product.url_image_0.split('/')[-1]) }}" class="card-img-top"
+          alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+        <div class="card-body">
+          <h5 class="card-title">{{ product.name }}</h5>
+          <form method="POST" action="/update_product/{{ product.id }}">
+            <div class="mb-3">
+              <label class="form-label">Giá</label>
+              <input type="number" name="price" value="{{ product.price }}" step="0.01" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Khuyến mãi (%)</label>
+              <input type="number" name="discount" value="{{ product.discount|default(0.00) }}" step="0.01" min="0"
+                max="100" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Mô tả</label>
+              <textarea name="description" class="form-control" rows="3">{{ product.description }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Cập nhật</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

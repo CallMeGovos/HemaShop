@@ -1,0 +1,21 @@
+<div class="container my-4">
+  <h2 class="text-center mb-4 text-white"
+    style="background: linear-gradient(90deg, #ff7e5f, #feb47b); padding: 10px; border-radius: 10px;">Sản phẩm bán chạy
+  </h2>
+  <div class="row">
+    {% for seller in best_sellers %}
+    <div class="col-md-2 mb-3">
+      <div class="card h-100 shadow-sm"
+        style="background: linear-gradient(135deg, #6e8efb, #a777e3); border: none; border-radius: 10px;">
+        <img src="{{ url_for('static', filename=seller.url_image_0.split('/')[-1]) }}" class="card-img-top"
+          alt="{{ seller.name }}" style="height: 150px; object-fit: cover;">
+        <div class="card-body text-center">
+          <h5 class="card-title text-white">{{ seller.name }}</h5>
+          <p class="card-text text-white">Giá: ${{ seller.price }}</p>
+          <p class="card-text text-white">Đã bán: {{ seller.sales_count }}</p>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>

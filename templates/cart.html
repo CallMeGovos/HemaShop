@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %} - Giỏ hàng{% endblock %}
+{% block content %}
+<h1 class="text-center mb-4">Giỏ hàng</h1>
+<div class="container" style=" border: 10px solid #26cc26;">
+  <table class="table table-striped" style="min-height: 500px;">
+    <thead class="table-dark">
+      <tr>
+        <th>Mã sản phẩm</th>
+        <th>Tên sản phẩm</th>
+        <th>Ảnh</th>
+        <th>Số lượng</th>
+        <th>Đơn giá</th>
+        <th>Giảm giá (%)</th>
+        <th>Thành tiền</th>
+        <th>Huỷ mua</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in cart_items %}
+      <tr>
+        <td>{{ item.product_id }}</td>
+        <td>{{ item.name }}</td>
+        <td><img src="{{ url_for('static', filename='images/' + item.url_image_0) }}" alt="{{ item.name }}"
+            style="width: 100px; height: auto;"></td>
+        <td>
+          <form method="POST" action="/update_cart/{{ item.cart_id }}">
+            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-control"
+              style="width: 80px;">
+            <button type="submit" class="btn btn-sm btn-primary mt-1">Cập nhật</button>
+          </form>
+        </td>
+        <td>${{ '{:,.2f}'.format(item.unit_price) }}</td>
+        <td>{{ '{:,.2f}'.format(item.discount) }}%</td>
+        <td>${{ '{:,.2f}'.format(item.total_price) }}</td>
+        <td><a href="/remove_from_cart/{{ item.cart_id }}" class="btn btn-danger btn-sm">Xóa</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="text-end">
+    <p><strong>Tổng số lượng:</strong> {{ total_quantity }}</p>
+    <p><strong>Tổng tiền:</strong> ${{ '{:,.2f}'.format(total_amount) }}</p>
+    <a href="/" class="btn btn-primary">Tiếp tục mua sắm</a>
+    <a href="/order" class="btn btn-success">Đặt hàng</a>
+  </div>
+</div>
+{% endblock %}

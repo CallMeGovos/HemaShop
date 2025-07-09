@@ -1,0 +1,19 @@
+<div class="card">
+  <div class="card-header">
+    <h5>Lọc theo Thương hiệu</h5>
+  </div>
+  <div class="card-body">
+    <form method="GET" action="/">
+      <div class="mb-3">
+        <select name="brand" class="form-select">
+          <option value="">Tất cả</option>
+          {% for brand in brands %}
+          <option value="{{ brand.name }}" {% if selected_brand == brand.name %}selected{% endif %}>{{ brand.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Lọc</button>
+    </form>
+  </div>
+</div>
