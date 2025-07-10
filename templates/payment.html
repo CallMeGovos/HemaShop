@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>{{ title }}</title>
+</head>
+
+<body>
+  <h1>Thanh toán với VNPay</h1>
+  <form method="POST" action="/payment">
+    <label>Loại đơn hàng:</label>
+    <input type="text" name="order_type" required><br>
+    <label>Mã đơn hàng:</label>
+    <input type="text" name="order_id" required><br>
+    <label>Số tiền (VND):</label>
+    <input type="number" name="amount" required><br>
+    <label>Mô tả:</label>
+    <input type="text" name="order_desc" required><br>
+    <label>Mã ngân hàng:</label>
+    <input type="text" name="bank_code" placeholder="Để trống nếu chọn tại VNPay"><br>
+    <label>Ngôn ngữ:</label>
+    <select name="language">
+      <option value="vn">Tiếng Việt</option>
+      <option value="en">English</option>
+    </select><br>
+    <button type="submit">Thanh toán</button>
+  </form>
+</body>
+
+</html>

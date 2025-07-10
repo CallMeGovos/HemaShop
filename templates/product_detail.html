@@ -1,31 +1,256 @@
 {% extends 'base.html' %}
 {% block title %} - Chi tiết sản phẩm{% endblock %}
 {% block content %}
-<div class="container">
+<div class="container my-4">
   <h1 class="text-center mb-4">Chi tiết sản phẩm</h1>
-  <div class="row justify-content-center">
+  <div class="row">
+    <!-- Phần hình ảnh sản phẩm -->
     <div class="col-md-6">
-      <div class="card">
-        <img src="{{ url_for('static', filename='images/' + product.url_image_0.split('/')[-1]) }}" class="card-img-top"
-          alt="{{ product.name }}" style="height: 300px; object-fit: cover;">
+      <div id="productCarousel" class="carousel slide" data-bs-ride="carousel" style="height: 100%;">
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <img src="{{ url_for('static', filename='images/' + product.url_image_0.split('/')[-1]) }}"
+              class="d-block w-100" alt="{{ product.name }}"
+              style="height: 100%; object-fit: cover; max-height: 400px;">
+          </div>
+          {% if product.url_image_1 %}
+          <div class="carousel-item">
+            <img src="{{ url_for('static', filename='images/' + product.url_image_1.split('/')[-1]) }}"
+              class="d-block w-100" alt="{{ product.name }} - Hình 2"
+              style="height: 100%; object-fit: cover; max-height: 400px;">
+          </div>
+          {% endif %}
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Phần thông tin sản phẩm -->
+    <div class="col-md-6">
+      <div class="card h-100">
         <div class="card-body">
           <h5 class="card-title">{{ product.name }}</h5>
           <p class="card-text">
             <strong>Loại:</strong> {{ product.type }}<br>
             <strong>Thương hiệu:</strong> {{ product.brand }}<br>
-            <strong>Giá:</strong> ${{ product.price }}<br>
+            <strong>Giá gốc:</strong> <span
+              class="text-muted text-decoration-line-through">${{ product.price }}</span><br>
+            {% if product.discount > 0 %}
+            <strong>Khuyến mãi:</strong> <span class="text-danger">{{ product.discount }}%</span><br>
+            <strong>Giá đã giảm:</strong> <span class="text-success">${{ product.discounted_price }}</span><br>
+            {% else %}
+            <strong>Giá:</strong> <span class="text-success">${{ product.price }}</span><br>
+            {% endif %}
             <strong>Mô tả:</strong> {{ product.description | safe }}<br>
+            <strong>Vật liệu:</strong> {% if product.material %} {{ product.material }} {% else %} Chưa cập nhật
+            {% endif %}<br>
+            <strong>Kích thước:</strong> {% if product.size %} {{ product.size }} {% else %} Chuẩn HEMA {% endif %}<br>
           </p>
+
+          <!-- Nút hành động với AJAX -->
           {% if 'admin_session' not in session %}
-          <form method="POST" action="/add_to_cart/{{ product.id }}">
+          <div id="add-to-cart-{{ product.id }}" class="add-to-cart-form" data-product-id="{{ product.id }}">
             <input type="hidden" name="quantity" value="1">
-            <button type="submit" class="btn btn-primary">Thêm vào giỏ hàng</button>
-          </form>
+            <div class="input-group w-50 mb-2">
+              <button type="button" class="btn btn-secondary" id="decrease-{{ product.id }}">-</button>
+              <input type="number" name="quantity" value="1" min="1" class="form-control text-center"
+                id="quantity-{{ product.id }}">
+              <button type="button" class="btn btn-secondary" id="increase-{{ product.id }}">+</button>
+            </div>
+            <button type="button" class="btn btn-primary add-to-cart-btn">Thêm vào giỏ hàng</button>
+          </div>
           {% endif %}
           <a href="/" class="btn btn-secondary mt-2">Quay lại</a>
+          <a href="/cart" class="btn btn-info mt-2">Xem giỏ hàng</a>
+
+          <!-- Phần đánh giá -->
+          <div class="mt-4">
+            <h6>Đánh giá sản phẩm</h6>
+            <div class="rating">
+              {% for i in range(1, 6) %}
+              {% if loop.index <= product.rating|default(0) %}
+              <span class="text-warning">★</span>
+              {% else %}
+              <span class="text-secondary">★</span>
+              {% endif %}
+              {% endfor %}
+              <span class="text-muted"> ({{ product.reviews|default(0) }} đánh giá)</span>
+            </div>
+            <p class="text-muted">Chưa có đánh giá. Hãy là người đầu tiên!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phần card thông tin bổ sung -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="card-title">Thông tin chi tiết</h6>
+          <p class="card-text text-muted">
+            While there is limited surviving documentation of the martial arts of classical antiquity (such as Greek
+            wrestling or gladiatorial combat), most of the surviving dedicated technical treatises or martial arts
+            manuals date to the late medieval period and the early modern period. For this reason, the focus of HEMA is
+            de facto on the period of the half-millennium of ca. 1300 to 1800, with a German, Italian, and Spanish
+            school flowering in the Late Middle Ages and the Renaissance (14th to 16th centuries), followed by French,
+            English, and Scottish schools of fencing in the modern period (17th and 18th centuries).
+
+            Martial arts of the 19th century such as classical fencing, and even early hybrid styles such as Bartitsu,
+            may also be included in the term HEMA in a wider sense, as may traditional or folkloristic styles attested
+            in the late 19th and early 20th centuries, including forms of folk wrestling and traditional stick-fighting
+            methods.
+
+            The term Western martial arts (WMA) is sometimes used in the United States and in a wider sense including
+            modern and traditional disciplines. During the Late Middle Ages, the longsword had a position of honour
+            among these disciplines, and sometimes historical European swordsmanship (HES) is used to refer to
+            swordsmanship techniques specifically.
+            The earliest Western book about the fighting arts currently known (c. 2025), Epitoma rei militaris,[1] was
+            written into Latin by a Roman writer, Publius Flavius Vegetius Renatus, who lived in Rome between the fourth
+            and fifth centuries. There are no other known Western martial arts manuals predating the Late Middle Ages
+            (except for fragmentary instructions on Greek wrestling, see Papyrus Oxyrhynchus 466), although medieval
+            literature (e.g., sagas of Icelanders, Eastern Roman Acritic songs, the Digenes Akritas and Middle High
+            German epics) record specific martial deeds and military knowledge; in addition, historical artwork depicts
+            combat and weaponry (e.g., the Bayeux Tapestry, the Synopsis of Histories by John Skylitzes, the Morgan
+            Bible). Some researchers have attempted to reconstruct older fighting methods such as Pankration, Eastern
+            Roman hoplomachia, Viking swordsmanship and gladiatorial combat by reference to these sources and practical
+            experimentation.
+
+            The Royal Armouries Ms. I.33 (also known as the "Walpurgis" or "Tower Fechtbuch"), dated to c. 1300,[2] is
+            the oldest surviving Fechtbuch, teaching sword and buckler combat.
+            Post-classical history
+            edit
+            The central figure of late medieval martial arts, at least in Germany, is Johannes Liechtenauer. Though no
+            manuscript written by him is known to have survived, his teachings were first recorded in the late
+            14th-century Nürnberger Handschrift GNM 3227a. From the 15th to the 17th century, numerous Fechtbücher
+            (German 'fencing-books') were produced, of which some several hundred are extant; a great many of these
+            describe methods descended from Liechtenauer's. Liechtenauer's Zettel (recital) remains one of the most
+            famous — if cryptic — pieces of European martial arts scholarship to this day, with several translations and
+            interpretations of the poem being put into practice by fencers and scholars around the world.[3][4]
+
+
+            Longsword guards (1452 manuscript)
+            Normally, several modes of combat were taught alongside one another, typically unarmed grappling
+            (Kampfringen or abrazare), dagger (Degen or daga, often of the rondel dagger), long knife (Messer), or
+            Dusack, half- or quarterstaff, polearms, longsword (Langesschwert, spada longa, spadone), and combat in
+            plate armour (Harnischfechten or armazare), both on foot and on horseback. Some Fechtbücher have sections on
+            dueling shields (Stechschild), special weapons used only in trial by combat.
+
+            Important 15th century German fencing masters include Sigmund Ringeck, Peter von Danzig (see Cod. 44 A 8),
+            Hans Talhoffer and Paulus Kal, all of whom taught the teachings of Liechtenauer. From the late 15th century,
+            there were "brotherhoods" of fencers (Fechtbruderschaften), most notably the Brotherhood of St. Mark
+            (attested 1474) and the Federfechter.[4]
+
+            An early Burgundian French treatise is Le jeu de la hache (The Play of the Axe) of ca. 1400.
+
+            The earliest master to write in the Italian language was Fiore dei Liberi, commissioned by the Marquis di
+            Ferrara. Between 1407 and 1410, he documented comprehensive fighting techniques in a treatise entitled Flos
+            Duellatorum covering grappling, dagger, arming sword, longsword, pole-weapons, armoured combat, and mounted
+            combat.[5] The Italian school is continued by Filippo Vadi (1482–1487) and Pietro Monte (1492, Latin with
+            Italian and Spanish terms).
+
+            Three early (before George Silver) natively English swordplay texts exist, but are all very obscure and from
+            uncertain dates; they are generally thought to belong to the latter half of the 15th century.
+          </p>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Thêm phần toast notification -->
+<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function () {
+    // Điều khiển số lượng sản phẩm
+    $('.add-to-cart-form').each(function () {
+      const productId = $(this).data('product-id');
+      document.getElementById(`increase-${productId}`).addEventListener('click', function () {
+        let quantity = document.getElementById(`quantity-${productId}`);
+        quantity.value = parseInt(quantity.value) + 1;
+      });
+
+      document.getElementById(`decrease-${productId}`).addEventListener('click', function () {
+        let quantity = document.getElementById(`quantity-${productId}`);
+        if (parseInt(quantity.value) > 1) {
+          quantity.value = parseInt(quantity.value) - 1;
+        }
+      });
+    });
+
+    // Xử lý thêm vào giỏ hàng
+    $('.add-to-cart-btn').click(function () {
+      console.log('Button clicked!'); // Debug: Kiểm tra sự kiện click
+      var form = $(this).closest('.add-to-cart-form');
+      var productId = form.data('product-id');
+      var quantity = form.find('input[name="quantity"]').val();
+
+      console.log('Sending AJAX: Product ID:', productId, 'Quantity:', quantity); // Debug: Dữ liệu gửi đi
+
+      $.ajax({
+        url: '/add_to_cart/' + productId,
+        type: 'POST',
+        data: {
+          quantity: quantity
+        },
+        success: function (response) {
+          console.log('AJAX Success:', response); // Debug: Phản hồi từ server
+          if (response.success) {
+            var toast = $('<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">' +
+              '<div class="toast-header">' +
+              '<strong class="me-auto">Thành công</strong>' +
+              '<button type="button" class="btn-close" data-bs-dismiss="toast"></button>' +
+              '</div>' +
+              '<div class="toast-body" style="color: green">Sản phẩm đã được thêm vào giỏ hàng!</div>' +
+              '</div>');
+            $('#toast-container').append(toast);
+            var bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+
+            if ($('#cart-count').length) {
+              $('#cart-count').text(response.cart_count);
+            }
+          } else {
+            var toast = $('<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">' +
+              '<div class="toast-header">' +
+              '<strong class="me-auto text-danger">Lỗi</strong>' +
+              '<button type="button" class="btn-close" data-bs-dismiss="toast"></button>' +
+              '</div>' +
+              '<div class="toast-body">' + (response.error || 'Lỗi không xác định') + '</div>' +
+              '</div>');
+            $('#toast-container').append(toast);
+            var bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+          }
+        },
+        error: function (xhr, status, error) {
+          console.log('AJAX Error:', xhr.status, status, error, xhr.responseText); // Debug: Lỗi chi tiết
+          var toast = $('<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">' +
+            '<div class="toast-header">' +
+            '<strong class="me-auto text-danger">Lỗi</strong>' +
+            '<button type="button" class="btn-close" data-bs-dismiss="toast"></button>' +
+            '</div>' +
+            '<div class="toast-body">Lỗi khi thêm sản phẩm: ' + (xhr.responseJSON ? xhr.responseJSON
+              .error : error) + '</div>' +
+            '</div>');
+          $('#toast-container').append(toast);
+          var bsToast = new bootstrap.Toast(toast);
+          bsToast.show();
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}
 {% endblock %}

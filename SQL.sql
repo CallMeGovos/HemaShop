@@ -14,7 +14,7 @@ CREATE TABLE types (
     type_id INT IDENTITY(1,1) PRIMARY KEY,
     type NVARCHAR(50) NOT NULL,
     is_active BIT NOT NULL DEFAULT 1
-);
+);  
 GO
 
 -- Tạo bảng brands
@@ -92,6 +92,7 @@ CREATE TABLE orders (
 );
 GO
 
+-- Tạo bảng orer_details
 CREATE TABLE order_details (
     order_id INT NOT NULL,
     product_id INT NOT NULL,
@@ -102,7 +103,7 @@ CREATE TABLE order_details (
     FOREIGN KEY (order_id) REFERENCES orders(order_id),
     FOREIGN KEY (product_id) REFERENCES products(product_id)
 );
-GO
+GO  
 
 -- Tạo bảng admin
 CREATE TABLE admin (
@@ -112,6 +113,7 @@ CREATE TABLE admin (
 );
 GO
 
+-- Tạo bảng best_sellers
 CREATE TABLE best_sellers (
     best_seller_id INT PRIMARY KEY IDENTITY(1,1),
     product_id INT NOT NULL,
@@ -121,44 +123,15 @@ CREATE TABLE best_sellers (
 );
 GO
 
--- Chèn dữ liệu mẫu cho bảng types
-INSERT INTO types (type, is_active) VALUES
-    ('Long Sword', 1),
-    ('Shield', 1),
-    ('Armor', 1),
-    ('Spear', 1);
-GO
-
--- Chèn dữ liệu mẫu cho bảng brands
-INSERT INTO brands (name, logo, is_active) VALUES
-    ('Red Dragon', 'red_dragon.png', 1),
-    ('SPES', 'spes.png', 1),
-    ('Regenyei Armory', 'regenyei_armory.png', 1),
-    ('Funtasma', 'funtasma.png', 1),
-    ('Targaryen', 'targaryen.png', 1);
-GO
-
--- Chèn dữ liệu mẫu cho bảng products
-INSERT INTO products (name, type_id, brand_id, price, url_image_0, url_image_1, description) VALUES
-    ('Dark Sister', 1, 5, 250.00, 'dark_sister_0.png', 'dark_sister_1.png', 'A legendary sword with a sharp edge, perfect for combat training.'),
-    ('Federschwert', 1, 2, 200.00, 'federschwert_0.png', 'federschwert_1.png', 'A durable training sword designed for safety and performance.'),
-    ('Buckler', 2, 3, 80.00, 'buckler_0.png', 'buckler_1.png', 'A small, round shield ideal for historical fencing.'),
-    ('Fencing Jacket', 3, 1, 120.00, 'fencing_jacket_0.png', 'fencing_jacket_1.png', 'Protective jacket with high-quality padding for HEMA practice.'),
-    ('Spear of Valyria', 4, 5, 150.00, 'spear_valyria_0.png', 'spear_valyria_1.png', 'A lightweight spear with a historical design for training.');
-GO
-
-
--- Chèn dữ liệu mẫu cho bảng discounts
-INSERT INTO discounts (product_id, discount) VALUES
-    (1, 10.00),  -- Dark Sister giảm 10%
-    (2, 5.00),   -- Federschwert giảm 5%
-    (4, 15.00);  -- Fencing Jacket giảm 15%
-GO
-
--- Chèn dữ liệu mẫu cho bảng admin
-INSERT INTO admin (account, password) VALUES
-    ('a1', 'a1');
-GO
+-- Tạo bảng warehouse
+CREATE TABLE warehouse (
+    warehouse_id NVARCHAR(50) PRIMARY KEY,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    import_unit_price DECIMAL(10, 2),
+    location NVARCHAR(255),
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+)
 
 CREATE PROCEDURE sp_CreateOrder
     @UserId INT,

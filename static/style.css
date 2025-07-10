@@ -93,3 +93,201 @@ body {
   bottom: 20px;
   right: 20px;
 }
+/* Tùy chỉnh bảng chính */
+.order-table {
+  background-color: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.order-table th {
+  background-color: #1e2a38; /* Màu nền đậm hơn cho tiêu đề */
+  color: #ffffff;
+  text-align: center;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+.order-table td {
+  vertical-align: middle;
+  padding: 12px;
+  font-size: 0.95rem;
+}
+
+.order-table .text-center {
+  text-align: center !important;
+}
+
+/* Tùy chỉnh bảng chi tiết */
+.order-item-table th {
+  background-color: #e9ecef;
+  font-size: 0.9rem;
+  padding: 8px;
+}
+
+.order-item-table td {
+  font-size: 0.9rem;
+  padding: 8px;
+}
+
+/* Hình ảnh sản phẩm */
+.small-book-thumbnail {
+  width: 60px;
+  height: 80px;
+  object-fit: cover;
+  border: 1px solid #ddd;
+}
+
+/* Hiệu ứng hover và toggle */
+.toggle-details:hover {
+  background-color: #f1f3f5;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-icon {
+  font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+
+.bi-chevron-up {
+  transform: rotate(180deg);
+}
+
+/* Tùy chỉnh bảng chính */
+.order-table {
+  background-color: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.order-table th {
+  background-color: #1e2a38; /* Màu nền đậm hơn */
+  color: #ffffff;
+  text-align: center;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+.order-table td {
+  vertical-align: middle;
+  padding: 12px;
+  font-size: 0.95rem;
+}
+
+.order-table .text-center {
+  text-align: center !important;
+}
+
+/* Tùy chỉnh bảng chi tiết */
+.order-item-table th {
+  background-color: #e9ecef;
+  font-size: 0.9rem;
+  padding: 8px;
+}
+
+.order-item-table td {
+  font-size: 0.9rem;
+  padding: 8px;
+  color: #000000; /* Đảm bảo chữ đen trong chi tiết */
+}
+
+/* Hình ảnh sản phẩm */
+.small-book-thumbnail {
+  width: 60px;
+  height: 80px;
+  object-fit: cover;
+  border: 1px solid #ddd;
+}
+
+/* Hiệu ứng hover và toggle */
+.toggle-details:hover {
+  background-color: #f1f3f5;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-icon {
+  font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+
+.bi-chevron-up {
+  transform: rotate(180deg);
+}
+
+/* Tùy chỉnh badge trạng thái */
+.status-badge {
+  color: #000000 !important; /* Chữ đen trên mọi nền badge */
+  padding: 0.5em 0.8em;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.bg-success { background-color: #28a745 !important; }
+.bg-info { background-color: #17a2b8 !important; }
+.bg-warning { background-color: #ffc107 !important; }
+.bg-primary { background-color: #007bff !important; }
+.bg-secondary { background-color: #6c757d !important; }
+
+/* Nút hành động */
+.cancel-order-btn, .pay-order-btn {
+  padding: 4px 12px;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+
+.cancel-order-btn:hover {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.pay-order-btn:hover {
+  background-color: #218838;
+  color: #fff;
+}
+
+/* Bộ lọc trạng thái */
+.filter-group {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filter-group .btn {
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.filter-group .btn:hover, .filter-group .btn.active {
+  background-color: #007bff;
+  color: #ffffff;
+  border-color: #007bff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .order-table th,
+  .order-table td {
+      font-size: 0.85rem;
+      padding: 8px;
+  }
+  .small-book-thumbnail {
+      width: 50px;
+      height: 70px;
+  }
+  .status-badge {
+      font-size: 0.8rem;
+  }
+  .filter-group {
+      flex-wrap: wrap;
+  }
+  .filter-group .btn {
+      flex: 1 1 100%;
+      margin-bottom: 5px;
+  }
+}

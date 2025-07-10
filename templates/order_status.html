@@ -1,13 +1,31 @@
 {% extends 'base.html' %}
 {% block title %} - Trạng thái đơn hàng{% endblock %}
 {% block content %}
-<div class="container my-4">
-  <h2 class="text-center mb-4">Trạng thái đơn hàng</h2>
+<div class="container mt-5">
+  <h5 class="text-center text-primary mb-4 fw-bold">ĐƠN HÀNG CỦA TÔI</h5>
+  <h2 class="mb-4">Đơn hàng của tôi</h2>
 
-  {% with messages = get_flashed_messages() %}
+  <!-- Bộ lọc trạng thái với nền -->
+  <div class="btn-group mb-3 filter-group" role="group" aria-label="Filter Orders">
+    <a class="btn btn-outline-primary {% if not request.args.get('trangThai') %}active{% endif %}"
+      href="{{ url_for('order_status') }}">Tất cả</a>
+    <a class="btn btn-outline-primary {% if request.args.get('trangThai') == '1' %}active{% endif %}"
+      href="{{ url_for('order_status') }}?trangThai=1">Chờ xác nhận</a>
+    <a class="btn btn-outline-primary {% if request.args.get('trangThai') == '2' %}active{% endif %}"
+      href="{{ url_for('order_status') }}?trangThai=2">Chờ giao hàng</a>
+    <a class="btn btn-outline-primary {% if request.args.get('trangThai') == '3' %}active{% endif %}"
+      href="{{ url_for('order_status') }}?trangThai=3">Đã thanh toán</a>
+    <a class="btn btn-outline-primary {% if request.args.get('trangThai') == '4' %}active{% endif %}"
+      href="{{ url_for('order_status') }}?trangThai=4">Đã nhận hàng</a>
+    <a class="btn btn-outline-primary {% if request.args.get('trangThai') == '5' %}active{% endif %}"
+      href="{{ url_for('order_status') }}?trangThai=5">Đã huỷ</a>
+  </div>
+
+  <!-- Hiển thị thông báo flash -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-  {% for message in messages %}
-  <div class="alert alert-warning alert-dismissible fade show" role="alert">
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
     {{ message }}
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>
@@ -15,74 +33,180 @@
   {% endif %}
   {% endwith %}
 
-  {% if orders %}
+  <!-- Bảng danh sách đơn hàng -->
   <div class="table-responsive">
-    <table class="table table-striped">
-      <thead>
+    <table class="table table-hover table-striped border shadow-lg order-table rounded">
+      <thead class="table-dark">
         <tr>
-          <th>Mã đơn hàng</th>
-          <th>Khách hàng</th>
-          <th>Ngày đặt</th>
-          <th>Ngày giao</th>
-          <th>Tổng tiền</th>
-          <th>Trạng thái</th>
-          <th>Xem chi tiết</th>
+          <th scope="col" class="text-center">Mã đơn</th>
+          <th scope="col">Ngày đặt</th>
+          <th scope="col">Ngày giao dự kiến</th>
+          <th scope="col">Trạng thái</th>
+          <th scope="col" class="text-center">Hành động</th>
         </tr>
       </thead>
       <tbody>
+        {% if orders %}
         {% for order in orders %}
-        <tr>
-          <td>{{ order[0] }}</td> <!-- order_id -->
-          <td>{{ order[1] }}</td> <!-- full_name -->
-          <td>{{ order[2] }}</td> <!-- order_date -->
-          <td>{{ order[3] }}</td> <!-- delivery_date -->
-          <td>${{ "%.2f"|format(order[4]) }}</td> <!-- total_amount -->
-          <td>{{ status_mapping[order[5]] }}</td> <!-- status -->
+        <tr class="order-summary-row toggle-details" data-target="#orderDetails_{{ order[0] }}">
+          <td class="text-center"><span class="fw-bold text-primary">#{{ order[0] }}</span></td>
+          <td>{{ order[2].strftime('%d/%m/%Y') if order[2] else 'Chưa cập nhật' }}</td>
+          <td>{{ order[3].strftime('%d/%m/%Y') if order[3] else 'Chưa cập nhật' }}</td>
           <td>
-            <button class="btn btn-info btn-sm detail-btn" data-order-id="{{ order[0] }}" data-bs-toggle="collapse"
-              data-bs-target="#detail-{{ order[0] }}" aria-expanded="false" aria-controls="detail-{{ order[0] }}">
-              Xem chi tiết
+            <span class="badge status-badge 
+                            {% if order[5] == 4 %} bg-success 
+                            {% elif order[5] == 3 %} bg-info 
+                            {% elif order[5] == 2 %} bg-warning 
+                            {% elif order[5] == 1 %} bg-primary 
+                            {% elif order[5] == 5 %} bg-secondary 
+                            {% else %} bg-secondary 
+                            {% endif %}">
+              {{ status_mapping[order[5]] }}
+            </span>
+          </td>
+          <td class="text-center">
+            {% if order[5] in [0, 1] %}
+            <button class="btn btn-danger btn-sm cancel-order-btn" data-order-id="{{ order[0] }}">
+              <i class="bi bi-x-circle me-2"></i> Hủy đơn
             </button>
+            {% elif order[5] in [1, 2] %}
+            <button class="btn btn-success btn-sm pay-order-btn" data-order-id="{{ order[0] }}">
+              <i class="bi bi-credit-card me-2"></i> Thanh toán
+            </button>
+            {% endif %}
           </td>
         </tr>
-        <tr class="collapse" id="detail-{{ order[0] }}">
-          <td colspan="7">
-            <div class="card card-body">
-              <h5>Chi tiết đơn hàng #{{ order[0] }}</h5>
-              {% if order_details[order[0]] %}
-              <ul class="list-group">
-                {% for detail in order_details[order[0]] %}
-                <li class="list-group-item">
-                  Sản phẩm ID: {{ detail[0] }}<br> <!-- product_id -->
-                  Số lượng: {{ detail[1] }}<br> <!-- quantity -->
-                  Giá đơn vị: ${{ "%.2f"|format(detail[2]) }}<br> <!-- unit_price -->
-                  Giảm giá: {{ "%.2f"|format(detail[3]) }}%<br> <!-- discount -->
-                  Tổng giá: ${{ "%.2f"|format(detail[4]) }}
-                  <!-- total_price -->
-                </li>
-                {% endfor %}
-              </ul>
-              {% else %}
-              <p>Không có chi tiết cho đơn hàng này.</p>
-              {% endif %}
+        <tr class="order-detail-container-row" style="display: none;">
+          <td colspan="5" class="p-0">
+            <div class="p-3 bg-light border-top rounded-bottom" id="orderDetails_{{ order[0] }}">
+              <h6 class="mb-3 fw-bold text-dark">CHI TIẾT ĐƠN HÀNG <span class="text-primary">#{{ order[0] }}</span>
+              </h6>
+              <table class="table table-sm table-striped table-bordered mb-0 order-item-table">
+                <thead class="table-secondary">
+                  <tr>
+                    <th scope="col" style="width: 80px;">Ảnh bìa</th>
+                    <th scope="col">Tên sản phẩm</th>
+                    <th scope="col" class="text-center">Số lượng</th>
+                    <th scope="col" class="text-end">Đơn giá</th>
+                    <th scope="col" class="text-end">Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if order_details[order[0]] %}
+                  {% for detail in order_details[order[0]] %}
+                  <tr>
+                    <td>
+                      <img
+                        src="{{ url_for('static', filename='images/' + detail[5].split('/')[-1] if detail[5] else 'placeholder.png') }}"
+                        alt="Hình sản phẩm" class="img-fluid rounded small-book-thumbnail">
+                    </td>
+                    <td style="color: #000000;">Sản phẩm ID: {{ detail[0] }}</td>
+                    <td class="text-center">{{ detail[1] }}</td>
+                    <td class="text-end">${{ "%.2f"|format(detail[2]) }}</td>
+                    <td class="text-end fw-bold">${{ "%.2f"|format(detail[4]) }}</td>
+                  </tr>
+                  {% endfor %}
+                  {% else %}
+                  <tr>
+                    <td colspan="5" class="text-center text-muted">Không có chi tiết cho đơn hàng này.</td>
+                  </tr>
+                  {% endif %}
+                </tbody>
+                <tfoot class="table-group-divider">
+                  <tr>
+                    <td colspan="4" class="text-end fw-bold text-dark">Tổng tiền đơn hàng:</td>
+                    <td class="text-end fw-bold text-danger fs-5">
+                      ${{ "%.2f"|format(order[4]) }}
+                      {% if order[5] == 4 %}
+                      <span class="text-success ms-2" title="Đã thanh toán">
+                        <i class="bi bi-check-circle-fill"></i>
+                      </span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </td>
         </tr>
         {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">Bạn chưa có đơn hàng nào.</td>
+        </tr>
+        {% endif %}
       </tbody>
     </table>
   </div>
-  {% else %}
-  <p class="text-center">Bạn chưa có đơn hàng nào.</p>
-  {% endif %}
 </div>
 
 {% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  document.querySelectorAll('.detail-btn').forEach(button => {
-    button.addEventListener('click', () => {
-      const target = document.querySelector(button.getAttribute('data-bs-target'));
-      target.classList.toggle('show');
+  $(document).ready(function () {
+    // Toggle chi tiết đơn hàng
+    $('.toggle-details').click(function (e) {
+      e.preventDefault();
+      var target = $(this).data('target');
+      var $detailRow = $(this).next('.order-detail-container-row');
+      var $icon = $(this).find('.toggle-icon');
+      if ($detailRow.is(':visible')) {
+        $detailRow.hide();
+        $icon.removeClass('bi-chevron-up').addClass('bi-chevron-down');
+      } else {
+        $detailRow.show();
+        $icon.removeClass('bi-chevron-down').addClass('bi-chevron-up');
+      }
+    });
+
+    // Xử lý hủy đơn hàng
+    $('.cancel-order-btn').click(function () {
+      var orderId = $(this).data('order-id');
+      if (confirm('Bạn có chắc muốn hủy đơn hàng #' + orderId + '?')) {
+        $.ajax({
+          url: '/cancel_order',
+          type: 'POST',
+          data: {
+            order_id: orderId
+          },
+          success: function (response) {
+            if (response.success) {
+              alert('Đơn hàng #' + orderId + ' đã được hủy thành công!');
+              location.reload();
+            } else {
+              alert('Lỗi: ' + response.error);
+            }
+          },
+          error: function (xhr) {
+            alert('Lỗi khi hủy đơn hàng: ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Không rõ'));
+          }
+        });
+      }
+    });
+
+    // Xử lý thanh toán (demo)
+    $('.pay-order-btn').click(function () {
+      var orderId = $(this).data('order-id');
+      if (confirm('Bạn có chắc muốn thanh toán đơn hàng #' + orderId + '?')) {
+        $.ajax({
+          url: '/pay_order',
+          type: 'POST',
+          data: {
+            order_id: orderId
+          },
+          success: function (response) {
+            if (response.success) {
+              alert('Đơn hàng #' + orderId + ' đã thanh toán thành công (demo)!');
+              location.reload();
+            } else {
+              alert('Lỗi: ' + response.error);
+            }
+          },
+          error: function (xhr) {
+            alert('Lỗi khi thanh toán: ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Không rõ'));
+          }
+        });
+      }
     });
   });
 </script>

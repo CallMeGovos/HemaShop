@@ -10,15 +10,26 @@ from email.mime.text import MIMEText
 import os
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
+from vnpay import VNPay
+import logging
+
 
 load_dotenv()
 
 EMAIL_USER = os.environ.get('EMAIL_USER')
 EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 
+VNPAY_TMN_CODE = os.environ.get('VNPAY_TMN_CODE')
+VNPAY_HASH_SECRET_KEY = os.environ.get('VNPAY_HASH_SECRET_KEY')
+VNPAY_RETURN_URL = os.environ.get('VNPAY_RETURN_URL')
+
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'  # Thay bằng khóa bí mật an toàn
 app.config['UPLOAD_FOLDER'] = 'static/images'  # Thư mục lưu ảnh
+
+# Cấu hình logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Kết nối SQL Server
 
@@ -181,7 +192,6 @@ def index():
 
 @app.route('/product_detail/<int:product_id>')
 def product_detail(product_id):
-
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -194,20 +204,43 @@ def product_detail(product_id):
         WHERE p.product_id = ?
     ''', (product_id,))
     product = cursor.fetchone()
-    conn.close()
 
     if not product:
+        conn.close()
         return redirect(url_for('index'))
 
-    product = {'id': product[0], 'name': product[1], 'type': product[2], 'brand': product[3], 'price': float(product[4]),
-               'url_image_0': product[5], 'url_image_1': product[6], 'description': product[7]}
+    # Chuyển đổi tuple thành dict
+    product = {
+        'id': product[0], 'name': product[1], 'type': product[2], 'brand': product[3],
+        'price': float(product[4]), 'url_image_0': product[5], 'url_image_1': product[6],
+        'description': product[7]
+    }
+
+    # Lấy thông tin khuyến mãi (nếu có)
+    cursor.execute(
+        'SELECT discount FROM discounts WHERE product_id = ? AND discount > 0', (product_id,))
+    discount_row = cursor.fetchone()
+    # Chuyển đổi Decimal thành float
+    discount = float(discount_row[0]) if discount_row else 0.0
+
+    # Tính giá đã giảm
+    if discount > 0:
+        discounted_price = product['price'] * (1 - discount / 100)
+    else:
+        discounted_price = product['price']
+
+    # Thêm thông tin khuyến mãi và giá đã giảm vào product
+    product['discount'] = discount
+    product['discounted_price'] = round(discounted_price, 2)
+
+    conn.close()
     return render_template('product_detail.html', product=product)
 
 
 @app.route('/add_to_cart/<int:product_id>', methods=['POST'])
 def add_to_cart(product_id):
     if 'username' not in session:
-        return jsonify({'error': 'Vui lòng đăng nhập để thêm vào giỏ hàng!'}), 401
+        return render_template('login.html')
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -539,51 +572,159 @@ def processing_order():
 @app.route('/order_status')
 def order_status():
     if 'username' not in session:
+        flash('Vui lòng đăng nhập để xem trạng thái đơn hàng!', 'warning')
         return redirect(url_for('login'))
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        # Lấy thông tin người dùng
         cursor.execute(
             'SELECT user_id FROM users WHERE username = ?', (session['username'],))
-        user_id = cursor.fetchone()[0]
+        user = cursor.fetchone()
+        if not user:
+            flash('Không tìm thấy thông tin người dùng!', 'danger')
+            logger.error(f"User not found for username: {session['username']}")
+            return redirect(url_for('index'))
+        user_id = user[0]
 
-        # Lấy danh sách đơn hàng của người dùng
-        cursor.execute('''
+        trang_thai = request.args.get('trangThai', default=0, type=int)
+        query = '''
             SELECT order_id, full_name, order_date, delivery_date, total_amount, status
-            FROM orders WHERE user_id = ? ORDER BY order_date DESC
-        ''', (user_id,))
+            FROM orders WHERE user_id = ?
+        '''
+        params = (user_id,)
+        if trang_thai > 0:
+            query += ' AND status = ?'
+            # Sửa lại: trang_thai trực tiếp là status, không trừ 1
+            params += (trang_thai,)
+        query += ' ORDER BY order_date DESC'
+        cursor.execute(query, params)
         orders = cursor.fetchall()
 
-        # Lấy chi tiết đơn hàng cho tất cả orders
         order_details = {}
         for order in orders:
             cursor.execute('''
-                SELECT product_id, quantity, unit_price, discount, total_price
-                FROM order_details WHERE order_id = ?
-            ''', (order[0],))  # Sử dụng order[0] thay vì order['order_id']
+                SELECT od.product_id, od.quantity, od.unit_price, od.discount, od.total_price, p.url_image_0
+                FROM order_details od
+                JOIN products p ON od.product_id = p.product_id
+                WHERE od.order_id = ?
+            ''', (order[0],))
             order_details[order[0]] = cursor.fetchall()
 
-        # Định nghĩa trạng thái
         status_mapping = {
             0: 'Đang chờ admin xác nhận',
             1: 'Admin đã duyệt và đang giao',
             2: 'Chờ thanh toán nhận hàng',
             3: 'Đã thanh toán nhưng chưa nhận hàng',
-            4: 'Đã nhận hàng'
+            4: 'Đã nhận hàng',
+            5: 'Đã huỷ'
         }
 
-    except Exception as e:
-        print(f"Error in order_status: {e}")
-        flash('Đã xảy ra lỗi khi tải trạng thái đơn hàng!')
-        return redirect(url_for('index'))  # Redirect an toàn để tránh vòng lặp
+        logger.info(
+            f"Loaded {len(orders)} orders for user_id: {user_id} with filter: {trang_thai}")
 
+    except pyodbc.Error as e:
+        logger.error(f"Database error in order_status: {e}")
+        flash('Đã xảy ra lỗi khi tải trạng thái đơn hàng!', 'danger')
+        return redirect(url_for('index'))
+    except Exception as e:
+        logger.error(f"Unexpected error in order_status: {e}")
+        flash('Đã xảy ra lỗi không mong muốn!', 'danger')
+        return redirect(url_for('index'))
     finally:
         conn.close()
 
     return render_template('order_status.html', orders=orders, order_details=order_details, status_mapping=status_mapping)
+
+
+@app.route('/cancel_order', methods=['POST'])
+def cancel_order():
+    if 'username' not in session:
+        return jsonify({'error': 'Vui lòng đăng nhập!'}), 401
+
+    order_id = request.form.get('order_id')
+    if not order_id:
+        return jsonify({'error': 'Mã đơn hàng không hợp lệ!'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+            'SELECT user_id, status FROM orders WHERE order_id = ?', (order_id,))
+        order = cursor.fetchone()
+        if not order:
+            return jsonify({'error': 'Đơn hàng không tồn tại!'}), 404
+        user_id, status = order
+
+        cursor.execute(
+            'SELECT user_id FROM users WHERE username = ?', (session['username'],))
+        current_user_id = cursor.fetchone()[0]
+        if user_id != current_user_id:
+            return jsonify({'error': 'Bạn không có quyền hủy đơn hàng này!'}), 403
+
+        if status not in (0, 1):  # Chỉ cho hủy khi chờ xác nhận hoặc đang giao
+            return jsonify({'error': 'Đơn hàng không thể hủy ở trạng thái hiện tại!'}), 400
+
+        cursor.execute(
+            'UPDATE orders SET status = 5 WHERE order_id = ?', (order_id,))
+        conn.commit()
+        flash('Đơn hàng #{} đã được hủy thành công!'.format(order_id), 'success')
+        logger.info(f"Order {order_id} canceled by user {session['username']}")
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Error in cancel_order for order_id {order_id}: {e}")
+        return jsonify({'error': 'Đã xảy ra lỗi khi hủy đơn hàng!'}), 500
+    finally:
+        conn.close()
+
+
+@app.route('/pay_order', methods=['POST'])
+def pay_order():
+    if 'username' not in session:
+        return jsonify({'error': 'Vui lòng đăng nhập!'}), 401
+
+    order_id = request.form.get('order_id')
+    if not order_id:
+        return jsonify({'error': 'Mã đơn hàng không hợp lệ!'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+            'SELECT user_id, status FROM orders WHERE order_id = ?', (order_id,))
+        order = cursor.fetchone()
+        if not order:
+            return jsonify({'error': 'Đơn hàng không tồn tại!'}), 404
+        user_id, status = order
+
+        cursor.execute(
+            'SELECT user_id FROM users WHERE username = ?', (session['username'],))
+        current_user_id = cursor.fetchone()[0]
+        if user_id != current_user_id:
+            return jsonify({'error': 'Bạn không có quyền thanh toán đơn hàng này!'}), 403
+
+        if status not in (1, 2):  # Chỉ cho thanh toán khi đang giao hoặc chờ thanh toán
+            return jsonify({'error': 'Đơn hàng không thể thanh toán ở trạng thái hiện tại!'}), 400
+
+        # Chuyển sang Đã nhận hàng
+        cursor.execute(
+            'UPDATE orders SET status = 4 WHERE order_id = ?', (order_id,))
+        conn.commit()
+        flash('Đơn hàng #{} đã thanh toán thành công (demo)!'.format(
+            order_id), 'success')
+        logger.info(
+            f"Order {order_id} paid by user {session['username']} (demo)")
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Error in pay_order for order_id {order_id}: {e}")
+        return jsonify({'error': 'Đã xảy ra lỗi khi thanh toán!'}), 500
+    finally:
+        conn.close()
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -935,11 +1076,16 @@ def manage_orders():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute('''
-        SELECT o.order_id, o.full_name, o.address, o.phone, o.email, o.order_date, o.delivery_date, o.total_amount, o.status
-        FROM orders o
-        WHERE o.status = 0  -- Chỉ lấy đơn hàng chưa duyệt
-    ''')
+    trang_thai = request.args.get('trangThai', default=0, type=int)
+    query = 'SELECT o.order_id, o.full_name, o.address, o.phone, o.email, o.order_date, o.delivery_date, o.total_amount, o.status FROM orders o'
+    params = ()
+    if trang_thai == 1:
+        query += ' WHERE o.status = 0'  # Đang chờ duyệt
+    elif trang_thai == 2:
+        query += ' WHERE o.status = 1'  # Đã duyệt
+    else:
+        query += ' WHERE o.status IN (0, 1)'  # Mặc định cả hai trạng thái
+    cursor.execute(query, params)
     orders = [{'id': row[0], 'full_name': row[1], 'address': row[2], 'phone': row[3], 'email': row[4], 'order_date': row[5],
                'delivery_date': row[6], 'total_amount': float(row[7]), 'status': row[8]} for row in cursor.fetchall()]
     conn.close()
@@ -994,8 +1140,9 @@ def reject_order(order_id):
             '%Y-%m-%d %H:%M') if order_date else ''
         send_confirmation_email(
             email, full_name, order_date_str, None, total_amount, "Thông báo hết hàng")
-        cursor.execute('UPDATE orders SET status = 2 WHERE order_id = ?',
-                       (order_id,))  # 2 = từ chối
+        # 2 = từ chối
+        cursor.execute(
+            'UPDATE orders SET status = 2 WHERE order_id = ?', (order_id,))
         conn.commit()
         flash('Đơn hàng đã bị từ chối và email thông báo đã gửi.')
     else:
@@ -1003,6 +1150,42 @@ def reject_order(order_id):
 
     conn.close()
     return redirect(url_for('manage_orders'))
+
+
+@app.route('/cancel_admin_order/<int:order_id>', methods=['POST'])
+def cancel_admin_order(order_id):
+    if 'admin_session' not in session:
+        return jsonify({'error': 'Vui lòng đăng nhập với tư cách admin!'}), 401
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            'SELECT status FROM orders WHERE order_id = ?', (order_id,))
+        order = cursor.fetchone()
+        if not order or order[0] != 1:  # Chỉ hủy khi đã duyệt
+            return jsonify({'error': 'Đơn hàng không thể hủy ở trạng thái hiện tại!'}), 400
+
+        cursor.execute(
+            'SELECT full_name, email FROM orders WHERE order_id = ?', (order_id,))
+        full_name, email = cursor.fetchone()
+        send_confirmation_email(email, full_name, '',
+                                None, 0, "Thông báo hủy đơn hàng")
+        # 5 = đã hủy
+        cursor.execute(
+            'UPDATE orders SET status = 5 WHERE order_id = ?', (order_id,))
+        conn.commit()
+        flash('Đơn hàng #{} đã bị hủy bởi admin và email thông báo đã gửi.'.format(
+            order_id), 'warning')
+        logger.info(f"Order {order_id} canceled by admin")
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        logger.error(
+            f"Error in cancel_admin_order for order_id {order_id}: {e}")
+        return jsonify({'error': 'Đã xảy ra lỗi khi hủy đơn hàng!'}), 500
+    finally:
+        conn.close()
 
 
 @app.route('/add_product', methods=['GET', 'POST'])
@@ -1062,6 +1245,77 @@ def add_product():
 
     conn.close()
     return render_template('admin/add_product.html', types=types, brands=brands)
+
+# Thanh toán online
+# Hàm lấy IP client (giả định đơn giản)
+
+
+def get_client_ip(request):
+    return request.remote_addr or '127.0.0.1'
+
+
+@app.route('/payment', methods=['GET', 'POST'])
+def payment():
+    if request.method == 'POST':
+        # Lấy dữ liệu từ form
+        order_type = request.form.get('order_type')
+        order_id = request.form.get('order_id')
+        amount = int(request.form.get('amount'))  # Đảm bảo là số nguyên
+        order_desc = request.form.get('order_desc')
+        bank_code = request.form.get('bank_code')
+        language = request.form.get('language')
+
+        # Khởi tạo VNPay
+        vnp = VNPay()
+        vnp.requestData['vnp_Version'] = '2.1.0'
+        vnp.requestData['vnp_Command'] = 'pay'
+        vnp.requestData['vnp_TmnCode'] = os.environ.get('VNPAY_TMN_CODE')
+        vnp.requestData['vnp_Amount'] = amount * \
+            100  # VNPay yêu cầu đơn vị nhỏ (VND)
+        vnp.requestData['vnp_CurrCode'] = 'VND'
+        vnp.requestData['vnp_TxnRef'] = order_id
+        vnp.requestData['vnp_OrderInfo'] = order_desc
+        vnp.requestData['vnp_OrderType'] = order_type
+        vnp.requestData['vnp_Locale'] = language or 'vn'
+        if bank_code and bank_code != "":
+            vnp.requestData['vnp_BankCode'] = bank_code
+        vnp.requestData['vnp_CreateDate'] = datetime.now().strftime(
+            '%Y%m%d%H%M%S')
+        vnp.requestData['vnp_IpAddr'] = get_client_ip(request)
+        vnp.requestData['vnp_ReturnUrl'] = os.environ.get('VNPAY_RETURN_URL')
+
+        # Tạo URL thanh toán
+        vnpay_payment_url = vnp.get_payment_url(
+            'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',  # URL sandbox
+            os.environ.get('VNPAY_HASH_SECRET_KEY')
+        )
+        print(vnpay_payment_url)
+        return redirect(vnpay_payment_url)
+    return render_template("payment.html", title="Thanh toán")
+
+
+@app.route('/payment_return', methods=['GET'])
+def payment_return():
+    vnp_response = request.args.to_dict()
+    vnp_SecureHash = vnp_response.pop('vnp_SecureHash', None)
+    vnp_TxnRef = vnp_response.get('vnp_TxnRef')
+    vnp_TransactionStatus = vnp_response.get('vnp_TransactionStatus')
+
+    # Xác thực chữ ký
+    vnp = VNPay()
+    vnp.requestData = vnp_response
+    sign_data = "|".join([f"{k}={v}" for k, v in sorted(
+        vnp_response.items())]) + "|" + os.environ.get('VNPAY_HASH_SECRET_KEY')
+    calculated_hash = hmac.new(
+        os.environ.get('VNPAY_HASH_SECRET_KEY').encode(),
+        sign_data.encode(),
+        hashlib.sha512
+    ).hexdigest()
+
+    if calculated_hash == vnp_SecureHash and vnp_TransactionStatus == '00':
+        return f"Thanh toán thành công! Mã giao dịch: {vnp_TxnRef}"
+    else:
+        return "Thanh toán thất bại hoặc không hợp lệ!"
 
 
 if __name__ == '__main__':

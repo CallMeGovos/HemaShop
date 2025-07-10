@@ -2,6 +2,8 @@
   <h2 class="text-center mb-4 text-white"
     style="background: linear-gradient(90deg, #ff7e5f, #feb47b); padding: 10px; border-radius: 10px;">Sản phẩm bán chạy
   </h2>
+  <img src="{{ url_for('static', filename='images/Best_Sellers_Banner.jpg') }}" class="d-block w-100"
+    style="height: 600px; object-fit: cover;" alt="Best_Sellers_Banner">
   <div class="row">
     {% for seller in best_sellers %}
     <div class="col-md-2 mb-3">

@@ -1,7 +1,7 @@
 <div class="row">
   {% for product in products %}
   <div class="col-md-4 mb-4">
-    <div class="card h-100">
+    <div class="card h-100 product-card" data-product-id="{{ product.product_id }}">
       <img src="{{ url_for('static', filename='images/' + product.url_image_0) }}" class="card-img-top"
         alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
       <div class="card-body">
@@ -24,7 +24,8 @@
           <button type="button" class="btn btn-primary add-to-cart-btn">Thêm vào giỏ hàng</button>
         </div>
         {% endif %}
-        <a href="/product_detail/{{ product.product_id }}" class="btn btn-info mt-2">Xem chi tiết</a>
+        <a href="/product_detail/{{ product.product_id }}" class="btn btn-info mt-2" style="display: none;">Xem chi
+          tiết</a>
       </div>
     </div>
   </div>
@@ -38,6 +39,16 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $(document).ready(function () {
+    // Xử lý click vào toàn bộ card để dẫn đến trang chi tiết
+    $('.product-card').click(function (e) {
+      // Ngăn chặn sự kiện click từ các phần tử con (như nút "Thêm vào giỏ hàng")
+      if ($(e.target).closest('.add-to-cart-btn, .btn-info').length) return;
+
+      var productId = $(this).data('product-id');
+      window.location.href = '/product_detail/' + productId;
+    });
+
+    // Xử lý thêm vào giỏ hàng
     $('.add-to-cart-btn').click(function () {
       var form = $(this).closest('.add-to-cart-form');
       var productId = form.data('product-id');
@@ -51,24 +62,21 @@
         },
         success: function (response) {
           if (response.success) {
-            // Tạo và hiển thị toast notification
             var toast = $('<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">' +
               '<div class="toast-header">' +
               '<strong class="me-auto">Thành công</strong>' +
               '<button type="button" class="btn-close" data-bs-dismiss="toast"></button>' +
               '</div>' +
-              '<div class="toast-body" style="color: red">Sản phẩm đã được thêm vào giỏ hàng!</div>' +
+              '<div class="toast-body" style="color: green">Sản phẩm đã được thêm vào giỏ hàng!</div>' +
               '</div>');
             $('#toast-container').append(toast);
             var bsToast = new bootstrap.Toast(toast);
             bsToast.show();
 
-            // Cập nhật số lượng giỏ hàng
             if ($('#cart-count').length) {
               $('#cart-count').text(response.cart_count);
             }
           } else {
-            // Hiển thị toast lỗi
             var toast = $('<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">' +
               '<div class="toast-header">' +
               '<strong class="me-auto text-danger">Lỗi</strong>' +
@@ -82,7 +90,6 @@
           }
         },
         error: function (xhr, status, error) {
-          // Hiển thị toast lỗi
           var toast = $('<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">' +
             '<div class="toast-header">' +
             '<strong class="me-auto text-danger">Lỗi</strong>' +

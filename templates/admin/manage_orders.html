@@ -1,38 +1,122 @@
 {% extends 'base.html' %}
 {% block title %} - Quản lý đơn hàng{% endblock %}
 {% block content %}
-<h2>Quản lý đơn hàng</h2>
-<table class="table">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Họ tên</th>
-      <th>Địa chỉ</th>
-      <th>Số điện thoại</th>
-      <th>Địa chỉ email</th>
-      <th>Ngày đặt</th>
-      <th>Ngày giao</th>
-      <th>Tổng tiền</th>
-      <th>Hành động</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for order in orders %}
-    <tr>
-      <td>{{ order.id }}</td>
-      <td>{{ order.full_name }}</td>
-      <td>{{ order.address }}</td>
-      <td>{{ order.phone }}</td>
-      <td>{{ order.email }}</td>
-      <td>{{ order.order_date }}</td>
-      <td>{{ order.delivery_date }}</td>
-      <td>${{ order.total_amount }}</td>
-      <td>
-        <a href="{{ url_for('approve_order', order_id=order.id) }}" class="btn btn-success btn-sm">Duyệt</a>
-        <a href="{{ url_for('reject_order', order_id=order.id) }}" class="btn btn-danger btn-sm">Từ chối</a>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="container mt-5">
+  <h2 class="mb-4">Quản lý đơn hàng</h2>
+
+  <!-- Bộ lọc trạng thái với nền -->
+  <div class="btn-group mb-3 filter-group" role="group" aria-label="Filter Orders">
+    <a class="btn btn-outline-primary {% if not request.args.get('trangThai') %}active{% endif %}"
+      href="{{ url_for('manage_orders') }}">Tất cả</a>
+    <a class="btn btn-outline-primary {% if request.args.get('trangThai') == '1' %}active{% endif %}"
+      href="{{ url_for('manage_orders') }}?trangThai=1">Đang chờ duyệt</a>
+    <a class="btn btn-outline-primary {% if request.args.get('trangThai') == '2' %}active{% endif %}"
+      href="{{ url_for('manage_orders') }}?trangThai=2">Đã duyệt</a>
+  </div>
+
+  <!-- Hiển thị thông báo flash -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
+
+  <!-- Bảng danh sách đơn hàng -->
+  <div class="table-responsive">
+    <table class="table table-hover table-striped border shadow-lg order-table rounded">
+      <thead class="table-dark">
+        <tr>
+          <th scope="col" class="text-center">ID</th>
+          <th scope="col">Họ tên</th>
+          <th scope="col">Địa chỉ</th>
+          <th scope="col">Số điện thoại</th>
+          <th scope="col">Địa chỉ email</th>
+          <th scope="col">Ngày đặt</th>
+          <th scope="col">Ngày giao</th>
+          <th scope="col">Tổng tiền</th>
+          <th scope="col" class="text-center">Trạng thái</th>
+          <th scope="col" class="text-center">Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if orders %}
+        {% for order in orders %}
+        <tr>
+          <td class="text-center">{{ order.id }}</td>
+          <td>{{ order.full_name }}</td>
+          <td>{{ order.address }}</td>
+          <td>{{ order.phone }}</td>
+          <td>{{ order.email }}</td>
+          <td>{{ order.order_date.strftime('%d/%m/%Y %H:%M') if order.order_date else 'Chưa cập nhật' }}</td>
+          <td>{{ order.delivery_date.strftime('%d/%m/%Y') if order.delivery_date else 'Chưa cập nhật' }}</td>
+          <td>${{ "%.2f"|format(order.total_amount) }}</td>
+          <td>
+            <span class="badge status-badge 
+                            {% if order.status == 0 %} bg-secondary 
+                            {% elif order.status == 1 %} bg-primary 
+                            {% elif order.status == 2 %} bg-danger 
+                            {% else %} bg-secondary 
+                            {% endif %}">
+              {{ 'Đang chờ duyệt' if order.status == 0 else 'Đã duyệt' if order.status == 1 else 'Đã từ chối' if order.status == 2 else 'Chưa xác định' }}
+            </span>
+          </td>
+          <td class="text-center">
+            {% if order.status == 0 %}
+            <a href="{{ url_for('approve_order', order_id=order.id) }}" class="btn btn-success btn-sm">
+              <i class="bi bi-check-circle me-2"></i> Duyệt
+            </a>
+            <a href="{{ url_for('reject_order', order_id=order.id) }}" class="btn btn-danger btn-sm">
+              <i class="bi bi-x-circle me-2"></i> Từ chối
+            </a>
+            {% elif order.status == 1 %}
+            <button class="btn btn-danger btn-sm cancel-admin-order-btn" data-order-id="{{ order.id }}">
+              <i class="bi bi-x-circle me-2"></i> Hủy
+            </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="10" class="text-center text-muted py-4">Không có đơn hàng nào để quản lý.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function () {
+    // Xử lý hủy đơn hàng bởi admin
+    $('.cancel-admin-order-btn').click(function () {
+      var orderId = $(this).data('order-id');
+      if (confirm('Bạn có chắc muốn hủy đơn hàng #' + orderId + '?')) {
+        $.ajax({
+          url: '/cancel_admin_order/' + orderId,
+          type: 'POST',
+          success: function (response) {
+            if (response.success) {
+              alert('Đơn hàng #' + orderId + ' đã bị hủy bởi admin!');
+              location.reload();
+            } else {
+              alert('Lỗi: ' + response.error);
+            }
+          },
+          error: function (xhr) {
+            alert('Lỗi khi hủy đơn hàng: ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Không rõ'));
+          }
+        });
+      }
+    });
+  });
+</script>
+{% endblock %}
 {% endblock %}
